@@ -1,12 +1,17 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace external_stats_screen
 {
   class MemoryManager
   {
     const int PROCESS_WM_READ = 0x0010;
+
+    [DllImport("kernel32.dll")]
+    private static extern int GetLastError();
 
     [DllImport("kernel32.dll")]
     private static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
@@ -21,12 +26,50 @@ namespace external_stats_screen
       bool found = false;
       foreach (Process p in Process.GetProcessesByName("SeriousSam"))
       {
+        // Set these two vars so that we can use other functions here on whatever process this is
         Game = p;
         gameHandle = OpenProcess(PROCESS_WM_READ, false, Game.Id);
 
-        // TODO: Check game version
-        found = true;
-        break;
+        if (gameHandle == IntPtr.Zero)
+        {
+          continue;
+        }
+
+        // Verify we have the right process
+        foreach (ProcessModule m in Game.Modules)
+        {
+          if (m.ModuleName == "Engine.dll")
+          {
+            IntPtr addr = SigScanner.Scan(
+              m.BaseAddress,
+              m.ModuleMemorySize,
+              2,
+              "FF 35 ????????",           // push [Engine._SE_VER_STRING]
+              "8D 85 30FFFFFF"            // lea eax,[ebp-000000D0]
+            );
+
+            if (addr == IntPtr.Zero)
+            {
+              break;
+            }
+
+            try
+            {
+              string versionStr = ReadAscii(ReadPtr(ReadPtr(addr)));
+              
+              if (versionStr == "AP_3381")
+              {
+                found = true;
+              }
+            } catch (Win32Exception) {}
+
+            break;
+          }
+        }
+
+        if (found) {
+          break;
+        }
       }
       if (!found) {
         Game = null;
@@ -37,6 +80,10 @@ namespace external_stats_screen
 
     public static bool IsGameRunning()
     {
+      if (IsGameHooked())
+      {
+        return true;
+      }
       HookGame();
       return IsGameHooked();
     }
@@ -50,7 +97,12 @@ namespace external_stats_screen
 
       int lenRead = 0;
       byte[] buf = new byte[len];
-      ReadProcessMemory((int)gameHandle, (int)addr, buf, 4, ref lenRead);
+      bool result = ReadProcessMemory(gameHandle.ToInt32(), addr.ToInt32(), buf, len, ref lenRead);
+
+      if (!result)
+      {
+        throw new Win32Exception(GetLastError(), "Error reading memory");
+      }
 
       if (lenRead == len)
       {
@@ -65,5 +117,29 @@ namespace external_stats_screen
       return newBuf;
     }
     public static int ReadInt(IntPtr addr) => BitConverter.ToInt32(Read(addr, 4), 0);
+    public static IntPtr ReadPtr(IntPtr addr) => new IntPtr(ReadInt(addr));
+
+    private const int ASCII_BUF_SIZE = 256;
+    public static string ReadAscii(IntPtr addr)
+    {
+      byte[] buf = Read(addr, ASCII_BUF_SIZE);
+      StringBuilder sb = new StringBuilder();
+
+      int i = 0;
+      while (buf[i] != 0)
+      {
+        sb.Append((char) buf[i]);
+
+        i++;
+        if (i == buf.Length)
+        {
+          addr = IntPtr.Add(addr, ASCII_BUF_SIZE);
+          buf = Read(addr, ASCII_BUF_SIZE);
+
+          i = 0;
+        } 
+      }
+      return sb.ToString();
+    }
   }
 }
