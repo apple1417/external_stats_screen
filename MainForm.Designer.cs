@@ -45,7 +45,7 @@
       // 
       // LevelStats
       // 
-      this.LevelStats.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.LevelStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.LevelStats.Location = new System.Drawing.Point(59, 129);
       this.LevelStats.Name = "LevelStats";
       this.LevelStats.Size = new System.Drawing.Size(70, 75);
@@ -64,7 +64,7 @@
       // 
       // GameStats
       // 
-      this.GameStats.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.GameStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.GameStats.Location = new System.Drawing.Point(188, 129);
       this.GameStats.Name = "GameStats";
       this.GameStats.Size = new System.Drawing.Size(61, 75);
@@ -124,7 +124,7 @@
       // 
       // GeneralStats
       // 
-      this.GeneralStats.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.GeneralStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.GeneralStats.Location = new System.Drawing.Point(90, 25);
       this.GeneralStats.Name = "GeneralStats";
       this.GeneralStats.Size = new System.Drawing.Size(159, 60);
@@ -146,8 +146,8 @@
       this.Controls.Add(this.GeneralLabel);
       this.Controls.Add(this.GeneralStats);
       this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+      this.MaximizeBox = false;
       this.Name = "MainForm";
-      this.Text = "External Stats Screen";
 
     }
 

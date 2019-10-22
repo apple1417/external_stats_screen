@@ -16,6 +16,7 @@ namespace external_stats_screen {
     public MainForm() {
       InitializeComponent();
       PlayerBox.SelectedIndex = 0;
+      Text = $"{Program.VERSION} - External Stats Screen";
 
       UpdateCMS = new ContextMenuStrip();
 
