@@ -65,6 +65,8 @@ namespace external_stats_screen {
     private const int PLAYER_TARGET_SIZE = 0x88;
     private Player[] AllPlayers;
 
+    private bool ArePointerSetup = false;
+
     public void SetupPointers() {
       if (!MemoryManager.IsGameRunning()) {
         return;
@@ -91,25 +93,42 @@ namespace external_stats_screen {
         "85 C0"                     // test eax,eax
       )));
 
-      Difficulty = new Pointer(_pNetwork, 0x9C);
-      CurrentTime = new Pointer(_pNetwork, 0x20, 0x58);
-      LevelNamePtr = new Pointer(_pNetwork, 0x12EC, 0x0);
+      if (_pNetwork == IntPtr.Zero) {
+        return;
+      }
+
+      if (MemoryManager.HookedGameVersion == GameVersion.REVOLUTION) {
+        Difficulty = new Pointer(_pNetwork, 0x9C);
+        CurrentTime = new Pointer(_pNetwork, 0x20, 0x58);
+        LevelNamePtr = new Pointer(_pNetwork, 0x12EC, 0x0);
+      } else {
+        Difficulty = new Pointer(_pNetwork, 0x988);
+        CurrentTime = new Pointer(_pNetwork, 0x20, 0x38);
+        LevelNamePtr = new Pointer(_pNetwork, (MemoryManager.HookedGameVersion == GameVersion.TFE)
+                                              ? 0x1284
+                                              : 0x1288, 0x0);
+      }
 
       int playerCount = new Pointer(_pNetwork, 0x20, 0x0).ReadInt();
-      Pointer currentPlayer = new Pointer(_pNetwork, 0x20, 0x4, 0x0);
-
+      Pointer firstPlayer = new Pointer(_pNetwork, 0x20, 0x4, 0x0);
       AllPlayers = new Player[playerCount];
       for (int i = 0; i < playerCount; i++) {
-        AllPlayers[i] = new Player(currentPlayer);
-        currentPlayer = currentPlayer.Adjust(PLAYER_TARGET_SIZE);
+        AllPlayers[i] = new Player(firstPlayer);
+        firstPlayer = firstPlayer.Adjust(PLAYER_TARGET_SIZE);
       }
+
+      ArePointerSetup = true;
     }
 
     public void Update(object myObject, EventArgs myEventArgs) {
       if (!MemoryManager.IsGameHooked()) {
+        ArePointerSetup = false;
         SetupPointers();
       }
-      if (MemoryManager.IsGameHooked()) {
+      if (!ArePointerSetup) {
+        SetupPointers();
+      }
+      if (ArePointerSetup) {
         Title.Text = "External Stats Screen - Hooked";
       } else {
         Title.Text = "External Stats Screen - Not Hooked";
@@ -124,15 +143,21 @@ namespace external_stats_screen {
       }
 
       foreach (Player p in AllPlayers) {
-        if (p.IsActive() && !PlayerBox.Items.Contains(p)) {
-          PlayerBox.Items.Add(p);
-        } else if (!p.IsActive() && PlayerBox.Items.Contains(p)) {
-          PlayerBox.Items.Remove(p);
-          if (PlayerBox.SelectedItem == p) {
-            PlayerBox.SelectedIndex = 0;
+        if (p.IsActive()) {
+          if (PlayerBox.Items.Contains(p)) {
+            // Replace the player so that the name updates
+            PlayerBox.Items[PlayerBox.Items.IndexOf(p)] = p;
+          } else {
+            PlayerBox.Items.Add(p);
           }
+        } else if (!p.IsActive() && PlayerBox.Items.Contains(p)) {
+          if (PlayerBox.SelectedItem == p) {
+            PlayerBox.SelectedItem = PlayerBox.Items[0];
+          }
+          PlayerBox.Items.Remove(p);
         }
       }
+
 
       int totalScore = 0;
       int startTimeUnix = -1;
@@ -154,8 +179,18 @@ namespace external_stats_screen {
 
       DateTime startTime = DateTimeOffset.FromUnixTimeSeconds(startTimeUnix).LocalDateTime;
       TimeSpan realTime = DateTime.Now - startTime;
-      TimeSpan gameIGT = TimeSpan.FromSeconds(CurrentTime.ReadDouble());
-      TimeSpan levelIGT = gameIGT.Subtract(TimeSpan.FromSeconds(levelStartTime));
+      TimeSpan gameIGT, levelIGT;
+      try {
+        gameIGT = TimeSpan.FromSeconds((MemoryManager.HookedGameVersion == GameVersion.REVOLUTION)
+                                                ? CurrentTime.ReadDouble()
+                                                : CurrentTime.ReadFloat());
+
+        levelIGT = gameIGT.Subtract(TimeSpan.FromSeconds(levelStartTime));
+      // While the game starts these can have invalid values
+      } catch (OverflowException) {
+        gameIGT = TimeSpan.Zero;
+        levelIGT = TimeSpan.Zero;
+      }
       string startTimeStr;
       string realTimeStr;
       string gameIGTStr;

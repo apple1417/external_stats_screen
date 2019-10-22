@@ -5,6 +5,10 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 namespace external_stats_screen {
+  enum GameVersion {
+    NONE, TFE, TSE, REVOLUTION
+  }
+
   class MemoryManager {
     const int PROCESS_WM_READ = 0x0010;
 
@@ -18,9 +22,10 @@ namespace external_stats_screen {
     private static extern bool ReadProcessMemory(int hProcess, int lpBaseAddress, byte[] lpBuffer, int dwSize, ref int lpNumberOfBytesRead);
 
     public static Process Game;
+    public static GameVersion HookedGameVersion;
     private static IntPtr gameHandle;
     public static void HookGame() {
-      bool found = false;
+      GameVersion foundVersion = GameVersion.NONE;
       foreach (Process p in Process.GetProcessesByName("SeriousSam")) {
         // Set these two vars so that we can use other functions here on whatever process this is
         Game = p;
@@ -30,45 +35,63 @@ namespace external_stats_screen {
           continue;
         }
 
-        // Verify we have the right process
+        // Check what game version we have
         foreach (ProcessModule m in Game.Modules) {
           if (m.ModuleName == "Engine.dll") {
-            IntPtr addr;
             try {
-              addr = SigScanner.Scan(
+              IntPtr addr = SigScanner.Scan(
                 m.BaseAddress,
                 m.ModuleMemorySize,
-                2,
-                "FF 35 ????????",           // push [Engine._SE_VER_STRING]
-                "8D 85 30FFFFFF"            // lea eax,[ebp-000000D0]
+                6,
+                "E8 ????????",              // call Engine.CON_GetBufferSize+480
+                "6A ??",                    // push 07                          <--- Minor Version
+                "68 ????????",              // push 00002710                    <--- Major Version
+                "6A 04",                    // push 04
+                "68 ????????"               // push Engine._ulEngineBuildMinor+118
               );
-            } catch (Win32Exception) {
-              break;
-            }
 
-            if (addr == IntPtr.Zero) {
-              break;
-            }
+              if (addr != IntPtr.Zero) {
+                byte minor = Read(addr, 1)[0];
+                int major = ReadInt(IntPtr.Add(addr, 2));
+                if (major == 10000 && minor == 5) {
+                  foundVersion = GameVersion.TFE;
+                } else if (major == 10000 && minor == 7) {
+                  foundVersion = GameVersion.TSE;
+                }
+              } else {
+                addr = SigScanner.Scan(
+                  m.BaseAddress,
+                  m.ModuleMemorySize,
+                  2,
+                  "FF 35 ????????",           // push [Engine._SE_VER_STRING]
+                  "8D 85 30FFFFFF"            // lea eax,[ebp-000000D0]
+                );
 
-            try {
-              string versionStr = ReadAscii(ReadPtr(ReadPtr(addr)));
+                if (addr == IntPtr.Zero) {
+                  break;
+                }
 
-              if (versionStr == "AP_3381") {
-                found = true;
+                string versionStr = ReadAscii(ReadPtr(ReadPtr(addr)));
+
+                if (versionStr.StartsWith("AP_3")) {
+                  foundVersion = GameVersion.REVOLUTION;
+                }
               }
-            } catch (Win32Exception) { }
-
+            } catch (Win32Exception) {}
+            // Regardless of if it worked, we found what we wanted, we can stop
             break;
           }
         }
 
-        if (found) {
+        if (foundVersion != GameVersion.NONE) {
           break;
         }
       }
-      if (!found) {
+
+      if (foundVersion == GameVersion.NONE) {
         Game = null;
       }
+      HookedGameVersion = foundVersion;
     }
 
     public static bool IsGameHooked() {
@@ -78,6 +101,7 @@ namespace external_stats_screen {
       Game.Refresh();
       if (Game.HasExited) {
         Game = null;
+        HookedGameVersion = GameVersion.NONE;
         return false;
       }
       return true;
