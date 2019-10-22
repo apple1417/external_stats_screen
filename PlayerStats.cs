@@ -1,7 +1,5 @@
-﻿namespace external_stats_screen
-{
-  class PlayerStats
-  {
+﻿namespace external_stats_screen {
+  class PlayerStats {
     public Pointer Score;
     public Pointer Kills;
     public Pointer Deaths;
@@ -9,8 +7,7 @@
     public Pointer TotalKills;
     public Pointer TotalSecrets;
 
-    public PlayerStats(Pointer basePtr)
-    {
+    public PlayerStats(Pointer basePtr) {
       Score = basePtr.Adjust(0x0);
       Kills = basePtr.Adjust(0x8);
       Deaths = basePtr.Adjust(0x10);
@@ -19,8 +16,7 @@
       TotalSecrets = basePtr.Adjust(0x58);
     }
 
-    public override string ToString()
-    {
+    public override string ToString() {
       return $"{Score.ReadInt()}\n" +
              $"{Deaths.ReadInt()}\n" +
              $"{Kills.ReadInt()}/{TotalKills.ReadInt()}\n" +

@@ -3,34 +3,30 @@ using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
 
-namespace external_stats_screen
-{
-  public partial class MainForm : Form
-  {
+namespace external_stats_screen {
+  public partial class MainForm : Form {
     private static readonly int[] UPDATE_OPTIONS = new int[] {
       1, 5, 17, 50, 100, 500, 1000
     };
     private int UPDATE_MS = UPDATE_OPTIONS[3];
-    private Timer UpdateTimer;
-    private ContextMenuStrip UpdateCMS;
+    private readonly Timer UpdateTimer;
+    private readonly ContextMenuStrip UpdateCMS;
 
     //private ContextMenuStrip PollingContextMenu;
-    public MainForm()
-    {
+    public MainForm() {
       InitializeComponent();
       PlayerBox.SelectedIndex = 0;
 
       UpdateCMS = new ContextMenuStrip();
 
       UpdateCMS.Items.Add("Polling Rate (ms)");
-      ToolStripMenuItem dropDown = (ToolStripMenuItem)UpdateCMS.Items[0];
-      foreach (int option in UPDATE_OPTIONS)
-      {
-        ToolStripMenuItem sub = new ToolStripMenuItem(option.ToString());
-        sub.CheckOnClick = true;
+      ToolStripMenuItem dropDown = (ToolStripMenuItem) UpdateCMS.Items[0];
+      foreach (int option in UPDATE_OPTIONS) {
+        ToolStripMenuItem sub = new ToolStripMenuItem(option.ToString()) {
+          CheckOnClick = true
+        };
         sub.Click += new EventHandler(ChangeUpdateRate);
-        if (option == UPDATE_MS)
-        {
+        if (option == UPDATE_MS) {
           sub.Checked = true;
         }
         dropDown.DropDownItems.Add(sub);
@@ -40,24 +36,20 @@ namespace external_stats_screen
 
       SetupPointers();
 
-      UpdateTimer = new Timer();
-      UpdateTimer.Interval = UPDATE_MS;
+      UpdateTimer = new Timer {
+        Interval = UPDATE_MS
+      };
       UpdateTimer.Tick += new EventHandler(Update);
       UpdateTimer.Start();
     }
 
-    private void ChangeUpdateRate(object myObject, EventArgs myEventArgs)
-    {
-      ToolStripMenuItem dropDown = (ToolStripMenuItem)UpdateCMS.Items[0];
-      for (int i = 0; i < dropDown.DropDownItems.Count; i++)
-      {
+    private void ChangeUpdateRate(object myObject, EventArgs myEventArgs) {
+      ToolStripMenuItem dropDown = (ToolStripMenuItem) UpdateCMS.Items[0];
+      for (int i = 0; i < dropDown.DropDownItems.Count; i++) {
         ToolStripMenuItem item = (ToolStripMenuItem) dropDown.DropDownItems[i];
-        if (item.Equals(myObject))
-        {
+        if (item.Equals(myObject)) {
           UPDATE_MS = UPDATE_OPTIONS[i];
-        }
-        else
-        {
+        } else {
           item.Checked = false;
         }
       }
@@ -73,24 +65,19 @@ namespace external_stats_screen
     private const int PLAYER_TARGET_SIZE = 0x88;
     private Player[] AllPlayers;
 
-    public void SetupPointers()
-    {
-      if (!MemoryManager.IsGameRunning())
-      {
+    public void SetupPointers() {
+      if (!MemoryManager.IsGameRunning()) {
         return;
       }
 
       ProcessModule engine = null;
-      foreach (ProcessModule m in MemoryManager.Game.Modules)
-      {
-        if (m.ModuleName == "Engine.dll")
-        {
+      foreach (ProcessModule m in MemoryManager.Game.Modules) {
+        if (m.ModuleName == "Engine.dll") {
           engine = m;
           break;
         }
       }
-      if (engine == null)
-      {
+      if (engine == null) {
         return;
       }
 
@@ -112,24 +99,19 @@ namespace external_stats_screen
       Pointer currentPlayer = new Pointer(_pNetwork, 0x20, 0x4, 0x0);
 
       AllPlayers = new Player[playerCount];
-      for (int i = 0; i < playerCount; i++)
-      {
+      for (int i = 0; i < playerCount; i++) {
         AllPlayers[i] = new Player(currentPlayer);
         currentPlayer = currentPlayer.Adjust(PLAYER_TARGET_SIZE);
       }
     }
 
-    public void Update(object myObject, EventArgs myEventArgs)
-    {
-      if (!MemoryManager.IsGameHooked())
-      {
+    public void Update(object myObject, EventArgs myEventArgs) {
+      if (!MemoryManager.IsGameHooked()) {
         SetupPointers();
       }
-      if (MemoryManager.IsGameHooked())
-      {
+      if (MemoryManager.IsGameHooked()) {
         Title.Text = "External Stats Screen - Hooked";
-      } else
-      {
+      } else {
         Title.Text = "External Stats Screen - Not Hooked";
         return;
       }
@@ -137,22 +119,16 @@ namespace external_stats_screen
       string levelNameStr = DeformatCTString(LevelNamePtr.ReadAscii());
       if (levelNameStr.Length == 0) {
         LevelName.Text = "Unknown Level";
-      } else
-      {
+      } else {
         LevelName.Text = levelNameStr;
       }
 
-      foreach (Player p in AllPlayers)
-      {
-        if (p.IsActive() && !PlayerBox.Items.Contains(p))
-        {
+      foreach (Player p in AllPlayers) {
+        if (p.IsActive() && !PlayerBox.Items.Contains(p)) {
           PlayerBox.Items.Add(p);
-        }
-        else if (!p.IsActive() && PlayerBox.Items.Contains(p))
-        {
+        } else if (!p.IsActive() && PlayerBox.Items.Contains(p)) {
           PlayerBox.Items.Remove(p);
-          if (PlayerBox.SelectedItem == p)
-          {
+          if (PlayerBox.SelectedItem == p) {
             PlayerBox.SelectedIndex = 0;
           }
         }
@@ -161,20 +137,16 @@ namespace external_stats_screen
       int totalScore = 0;
       int startTimeUnix = -1;
       float levelStartTime = -1.0f;
-      foreach (Player p in AllPlayers)
-      {
-        if (p.IsActive())
-        {
+      foreach (Player p in AllPlayers) {
+        if (p.IsActive()) {
           totalScore += p.GameStats.Score.ReadInt();
 
           int playerStartTime = p.StartTimeUnix.ReadInt();
           float playerLevelStartTime = p.LevelStartTime.ReadFloat();
-          if (playerStartTime < startTimeUnix || startTimeUnix < 0)
-          {
+          if (playerStartTime < startTimeUnix || startTimeUnix < 0) {
             startTimeUnix = playerStartTime;
           }
-          if (playerLevelStartTime < levelStartTime || levelStartTime < 0)
-          {
+          if (playerLevelStartTime < levelStartTime || levelStartTime < 0) {
             levelStartTime = playerLevelStartTime;
           }
         }
@@ -188,8 +160,7 @@ namespace external_stats_screen
       string realTimeStr;
       string gameIGTStr;
       string levelIGTStr;
-      if (startTimeUnix > 0 && levelStartTime > 0)
-      {
+      if (startTimeUnix > 0 && levelStartTime > 0) {
         startTimeStr = startTime.ToString("ddd yyyy-MM-dd HH:mm");
         realTimeStr = realTime.ToString("hh\\:mm\\:ss");
         gameIGTStr = gameIGT.ToString("hh\\:mm\\:ss");
@@ -201,8 +172,7 @@ namespace external_stats_screen
         levelIGTStr = "00:00:00";
       }
 
-      if (PlayerBox.SelectedItem.Equals("Squad"))
-      {
+      if (PlayerBox.SelectedItem.Equals("Squad")) {
         int score = 0, gameScore = 0;
         int deaths = 0, gameDeaths = 0;
         int kills = 0, gameKills = 0;
@@ -210,10 +180,8 @@ namespace external_stats_screen
         int totalKills = 0, gameTotalKills = 0;
         int totalSecrets = 0, gameTotalSecrets = 0;
 
-        foreach (Player p in AllPlayers)
-        {
-          if (p.IsActive())
-          {
+        foreach (Player p in AllPlayers) {
+          if (p.IsActive()) {
             score += p.LevelStats.Score.ReadInt();
             gameScore += p.GameStats.Score.ReadInt();
             deaths += p.LevelStats.Deaths.ReadInt();
@@ -224,23 +192,19 @@ namespace external_stats_screen
             gameSecrets += p.GameStats.Secrets.ReadInt();
 
             int tmp = p.LevelStats.TotalKills.ReadInt();
-            if (tmp > totalKills)
-            {
+            if (tmp > totalKills) {
               totalKills = tmp;
             }
             tmp = p.GameStats.TotalKills.ReadInt();
-            if (tmp > gameTotalKills)
-            {
+            if (tmp > gameTotalKills) {
               gameTotalKills = tmp;
             }
             tmp = p.LevelStats.TotalSecrets.ReadInt();
-            if (tmp > totalSecrets)
-            {
+            if (tmp > totalSecrets) {
               totalSecrets = tmp;
             }
             tmp = p.GameStats.TotalSecrets.ReadInt();
-            if (tmp > gameTotalSecrets)
-            {
+            if (tmp > gameTotalSecrets) {
               gameTotalSecrets = tmp;
             }
           }
@@ -256,17 +220,14 @@ namespace external_stats_screen
                          $"{gameKills}/{gameTotalKills}\n" +
                          $"{gameSecrets}/{gameTotalSecrets}\n" +
                          $"{gameIGTStr}";
-      }
-      else
-      {
-        Player p = (Player)PlayerBox.SelectedItem;
+      } else {
+        Player p = (Player) PlayerBox.SelectedItem;
         LevelStats.Text = p.LevelStats.ToString() + levelIGTStr;
         GameStats.Text = p.GameStats.ToString() + gameIGTStr;
       }
 
       string diffStr;
-      switch (Difficulty.ReadInt())
-      {
+      switch (Difficulty.ReadInt()) {
         case -1: diffStr = "Tourist"; break;
         case 0: diffStr = "Easy"; break;
         default:
@@ -282,17 +243,14 @@ namespace external_stats_screen
                           $"{realTimeStr}\n";
     }
 
-    public static string DeformatCTString(string input)
-    {
+    public static string DeformatCTString(string input) {
       StringBuilder output = new StringBuilder();
-      for (int i = 0; i < input.Length; i++)
-      {
+      for (int i = 0; i < input.Length; i++) {
         char c = input[i];
         if (c != '^') {
           output.Append(c);
         } else {
-          switch (input[i + 1])
-          {
+          switch (input[i + 1]) {
             case 'c': i += 7; break;
             case 'a': i += 3; break;
             case 'f': i += 2; break;

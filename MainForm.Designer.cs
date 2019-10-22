@@ -1,7 +1,5 @@
-﻿namespace external_stats_screen
-{
-  partial class MainForm
-  {
+﻿namespace external_stats_screen {
+  partial class MainForm {
     /// <summary>
     /// Required designer variable.
     /// </summary>
@@ -11,10 +9,8 @@
     /// Clean up any resources being used.
     /// </summary>
     /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
-    protected override void Dispose(bool disposing)
-    {
-      if (disposing && (components != null))
-      {
+    protected override void Dispose(bool disposing) {
+      if (disposing && (components != null)) {
         components.Dispose();
       }
       base.Dispose(disposing);
@@ -26,8 +22,7 @@
     /// Required method for Designer support - do not modify
     /// the contents of this method with the code editor.
     /// </summary>
-    private void InitializeComponent()
-    {
+    private void InitializeComponent() {
       this.LevelLabel = new System.Windows.Forms.Label();
       this.LevelStats = new System.Windows.Forms.Label();
       this.TotalLabel = new System.Windows.Forms.Label();
@@ -50,7 +45,7 @@
       // 
       // LevelStats
       // 
-      this.LevelStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.LevelStats.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.LevelStats.Location = new System.Drawing.Point(59, 129);
       this.LevelStats.Name = "LevelStats";
       this.LevelStats.Size = new System.Drawing.Size(70, 75);
@@ -69,7 +64,7 @@
       // 
       // GameStats
       // 
-      this.GameStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.GameStats.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.GameStats.Location = new System.Drawing.Point(188, 129);
       this.GameStats.Name = "GameStats";
       this.GameStats.Size = new System.Drawing.Size(61, 75);
@@ -129,7 +124,7 @@
       // 
       // GeneralStats
       // 
-      this.GeneralStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.GeneralStats.Anchor = ((System.Windows.Forms.AnchorStyles) ((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
       this.GeneralStats.Location = new System.Drawing.Point(90, 25);
       this.GeneralStats.Name = "GeneralStats";
       this.GeneralStats.Size = new System.Drawing.Size(159, 60);
