@@ -6,23 +6,32 @@ namespace external_stats_screen
 {
   class Pointer
   {
-    public IntPtr BaseAddress { get; }
-    public int[] Offsets { get; }
+    public IntPtr BaseAddress { get; private set;  }
+    public int[] Offsets { get; private set; }
     public Pointer(IntPtr baseAddress, params int[] offsets)
     {
       BaseAddress = baseAddress;
       Offsets = offsets;
     }
 
+    public Pointer AddOffsets(params int[] offsets) => new Pointer(BaseAddress, Offsets.Concat(offsets).ToArray());
+    public Pointer Adjust(int amount)
+    {
+      int[] newOffsets = (int[]) Offsets.Clone();
+      newOffsets[newOffsets.Length - 1] += amount;
+      return new Pointer(BaseAddress, newOffsets);
+    }
+
     public IntPtr GetFinalAddress()
     {
       try
       {
-        IntPtr ptr = MemoryManager.ReadPtr(BaseAddress);
+        IntPtr ptr = BaseAddress;
         // Don't read the final offset, we just want the address
         for (int i = 0; i < Offsets.Length - 1; i++)
         {
-          ptr = MemoryManager.ReadPtr(IntPtr.Add(ptr, Offsets[i]));
+          ptr = IntPtr.Add(ptr, Offsets[i]);
+          ptr = MemoryManager.ReadPtr(ptr);
         }
         return IntPtr.Add(ptr, Offsets.Last());
       } catch (Win32Exception) {
@@ -30,43 +39,72 @@ namespace external_stats_screen
       }
     }
 
-    public bool IsPointerValid() => GetFinalAddress() == IntPtr.Zero;
-
     public byte[] Read(int len)
     {
-      IntPtr addr = GetFinalAddress();
-      if (addr == IntPtr.Zero)
+      try
+      {
+        return MemoryManager.Read(GetFinalAddress(), len);
+      }
+      catch (Win32Exception)
       {
         return new byte[0];
       }
-      return MemoryManager.Read(addr, len);
+      
     }
     public int ReadInt()
     {
-      IntPtr addr = GetFinalAddress();
-      if (addr == IntPtr.Zero)
+      try
+      {
+        return MemoryManager.ReadInt(GetFinalAddress());
+      }
+      catch (Win32Exception)
       {
         return 0;
       }
-      return MemoryManager.ReadInt(addr);
     }
     public IntPtr ReadPtr()
     {
-      IntPtr addr = GetFinalAddress();
-      if (addr == IntPtr.Zero)
+      try
+      {
+        return MemoryManager.ReadPtr(GetFinalAddress());
+      }
+      catch (Win32Exception)
       {
         return IntPtr.Zero;
       }
-      return MemoryManager.ReadPtr(addr);
+    }
+    public float ReadFloat()
+    {
+      try
+      {
+        return MemoryManager.ReadFloat(GetFinalAddress());
+      }
+      catch (Win32Exception)
+      {
+        return 0.0f;
+      }
+    }
+    public double ReadDouble()
+    {
+      try
+      {
+        return MemoryManager.ReadDouble(GetFinalAddress());
+      }
+      catch (Win32Exception)
+      {
+        return 0.0d;
+      }
     }
     public string ReadAscii()
     {
-      IntPtr addr = GetFinalAddress();
-      if (addr == IntPtr.Zero)
+      try
+      {
+        return MemoryManager.ReadAscii(GetFinalAddress());
+      }
+      catch (Win32Exception)
       {
         return "";
       }
-      return MemoryManager.ReadAscii(addr);
     }
   }
 }

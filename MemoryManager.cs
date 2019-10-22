@@ -40,13 +40,20 @@ namespace external_stats_screen
         {
           if (m.ModuleName == "Engine.dll")
           {
-            IntPtr addr = SigScanner.Scan(
-              m.BaseAddress,
-              m.ModuleMemorySize,
-              2,
-              "FF 35 ????????",           // push [Engine._SE_VER_STRING]
-              "8D 85 30FFFFFF"            // lea eax,[ebp-000000D0]
-            );
+            IntPtr addr;
+            try
+            {
+              addr = SigScanner.Scan(
+                m.BaseAddress,
+                m.ModuleMemorySize,
+                2,
+                "FF 35 ????????",           // push [Engine._SE_VER_STRING]
+                "8D 85 30FFFFFF"            // lea eax,[ebp-000000D0]
+              );
+            } catch (Win32Exception)
+            {
+              break;
+            }
 
             if (addr == IntPtr.Zero)
             {
@@ -76,8 +83,20 @@ namespace external_stats_screen
       }
     }
 
-    public static bool IsGameHooked() => Game != null;
-
+    public static bool IsGameHooked() {
+      if (Game == null)
+      {
+        return false;
+      }
+      Game.Refresh();
+      if (Game.HasExited)
+      {
+        Game = null;
+        return false;
+      }
+      return true;
+    }
+    
     public static bool IsGameRunning()
     {
       if (IsGameHooked())
@@ -92,7 +111,7 @@ namespace external_stats_screen
     {
       if (!IsGameHooked())
       {
-        throw new InvalidOperationException("Game is not hooked!");
+        throw new Win32Exception(6, "Game is not hooked!");
       }
 
       int lenRead = 0;
@@ -116,8 +135,11 @@ namespace external_stats_screen
       }
       return newBuf;
     }
+
     public static int ReadInt(IntPtr addr) => BitConverter.ToInt32(Read(addr, 4), 0);
     public static IntPtr ReadPtr(IntPtr addr) => new IntPtr(ReadInt(addr));
+    public static float ReadFloat(IntPtr addr) => BitConverter.ToSingle(Read(addr, 4), 0);
+    public static double ReadDouble(IntPtr addr) => BitConverter.ToDouble(Read(addr, 8), 0);
 
     private const int ASCII_BUF_SIZE = 256;
     public static string ReadAscii(IntPtr addr)
