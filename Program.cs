@@ -6,7 +6,6 @@ namespace external_stats_screen {
     public const string VERSION = "v1.0";
     [STAThread]
     static void Main() {
-      Application.SetHighDpiMode(HighDpiMode.SystemAware);
       Application.EnableVisualStyles();
       Application.SetCompatibleTextRenderingDefault(false);
       Application.Run(new MainForm());

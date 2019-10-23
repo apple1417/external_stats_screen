@@ -23,6 +23,7 @@
     /// the contents of this method with the code editor.
     /// </summary>
     private void InitializeComponent() {
+      System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
       this.LevelLabel = new System.Windows.Forms.Label();
       this.LevelStats = new System.Windows.Forms.Label();
       this.TotalLabel = new System.Windows.Forms.Label();
@@ -33,10 +34,12 @@
       this.Title = new System.Windows.Forms.Label();
       this.GeneralLabel = new System.Windows.Forms.Label();
       this.GeneralStats = new System.Windows.Forms.Label();
+      this.SuspendLayout();
       // 
       // LevelLabel
       // 
       this.LevelLabel.AutoSize = true;
+      this.LevelLabel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.LevelLabel.Location = new System.Drawing.Point(6, 129);
       this.LevelLabel.Name = "LevelLabel";
       this.LevelLabel.Size = new System.Drawing.Size(47, 75);
@@ -46,6 +49,7 @@
       // LevelStats
       // 
       this.LevelStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.LevelStats.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.LevelStats.Location = new System.Drawing.Point(59, 129);
       this.LevelStats.Name = "LevelStats";
       this.LevelStats.Size = new System.Drawing.Size(70, 75);
@@ -56,6 +60,7 @@
       // TotalLabel
       // 
       this.TotalLabel.AutoSize = true;
+      this.TotalLabel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.TotalLabel.Location = new System.Drawing.Point(135, 129);
       this.TotalLabel.Name = "TotalLabel";
       this.TotalLabel.Size = new System.Drawing.Size(47, 75);
@@ -65,6 +70,7 @@
       // GameStats
       // 
       this.GameStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.GameStats.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.GameStats.Location = new System.Drawing.Point(188, 129);
       this.GameStats.Name = "GameStats";
       this.GameStats.Size = new System.Drawing.Size(61, 75);
@@ -75,7 +81,7 @@
       // LevelName
       // 
       this.LevelName.AutoSize = true;
-      this.LevelName.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+      this.LevelName.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.LevelName.Location = new System.Drawing.Point(6, 114);
       this.LevelName.Name = "LevelName";
       this.LevelName.Size = new System.Drawing.Size(94, 15);
@@ -85,7 +91,7 @@
       // TotalTitle
       // 
       this.TotalTitle.AutoSize = true;
-      this.TotalTitle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+      this.TotalTitle.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.TotalTitle.Location = new System.Drawing.Point(135, 114);
       this.TotalTitle.Name = "TotalTitle";
       this.TotalTitle.Size = new System.Drawing.Size(34, 15);
@@ -95,6 +101,7 @@
       // PlayerBox
       // 
       this.PlayerBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+      this.PlayerBox.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.PlayerBox.FormattingEnabled = true;
       this.PlayerBox.Items.AddRange(new object[] {
             "Squad"});
@@ -106,7 +113,7 @@
       // Title
       // 
       this.Title.AutoSize = true;
-      this.Title.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point);
+      this.Title.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
       this.Title.Location = new System.Drawing.Point(6, 6);
       this.Title.Name = "Title";
       this.Title.Size = new System.Drawing.Size(245, 19);
@@ -116,6 +123,7 @@
       // GeneralLabel
       // 
       this.GeneralLabel.AutoSize = true;
+      this.GeneralLabel.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.GeneralLabel.Location = new System.Drawing.Point(6, 25);
       this.GeneralLabel.Name = "GeneralLabel";
       this.GeneralLabel.Size = new System.Drawing.Size(78, 60);
@@ -125,6 +133,7 @@
       // GeneralStats
       // 
       this.GeneralStats.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+      this.GeneralStats.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
       this.GeneralStats.Location = new System.Drawing.Point(90, 25);
       this.GeneralStats.Name = "GeneralStats";
       this.GeneralStats.Size = new System.Drawing.Size(159, 60);
@@ -146,8 +155,11 @@
       this.Controls.Add(this.GeneralLabel);
       this.Controls.Add(this.GeneralStats);
       this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+      this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
       this.MaximizeBox = false;
       this.Name = "MainForm";
+      this.ResumeLayout(false);
+      this.PerformLayout();
 
     }
 
