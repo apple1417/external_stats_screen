@@ -187,8 +187,8 @@ namespace external_stats_screen {
                                                 : CurrentTime.ReadFloat());
 
         levelIGT = gameIGT.Subtract(TimeSpan.FromSeconds(levelStartTime));
-      // While the game starts these can have invalid values
-      } catch (OverflowException) {
+      // While the game starts/stops these can have invalid values - NaNs or values overflowing the timespan
+      } catch (Exception e) when (e is ArgumentException || e is OverflowException) {
         gameIGT = TimeSpan.Zero;
         levelIGT = TimeSpan.Zero;
       }

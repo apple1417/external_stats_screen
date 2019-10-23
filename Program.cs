@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace external_stats_screen {
   static class Program {
-    public const string VERSION = "v1.0";
+    public const string VERSION = "v1.1";
     [STAThread]
     static void Main() {
       Application.EnableVisualStyles();
