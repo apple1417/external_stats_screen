@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Text;
 using System.Windows.Forms;
@@ -12,7 +13,6 @@ namespace external_stats_screen {
     private readonly Timer UpdateTimer;
     private readonly ContextMenuStrip UpdateCMS;
 
-    //private ContextMenuStrip PollingContextMenu;
     public MainForm() {
       InitializeComponent();
       PlayerBox.SelectedIndex = 0;
@@ -40,7 +40,7 @@ namespace external_stats_screen {
       UpdateTimer = new Timer {
         Interval = UPDATE_MS
       };
-      UpdateTimer.Tick += new EventHandler(Update);
+      UpdateTimer.Tick += new EventHandler(UpdateSafe);
       UpdateTimer.Start();
     }
 
@@ -66,7 +66,7 @@ namespace external_stats_screen {
     private const int PLAYER_TARGET_SIZE = 0x88;
     private Player[] AllPlayers;
 
-    private bool ArePointerSetup = false;
+    private bool ArePointersSetup = false;
 
     public void SetupPointers() {
       if (!MemoryManager.IsGameRunning()) {
@@ -118,18 +118,30 @@ namespace external_stats_screen {
         firstPlayer = firstPlayer.Adjust(PLAYER_TARGET_SIZE);
       }
 
-      ArePointerSetup = true;
+      ArePointersSetup = true;
     }
 
-    public void Update(object myObject, EventArgs myEventArgs) {
+    public void UpdateSafe(object myObject, EventArgs myEventArgs) {
+      try {
+        UpdateForm();
+      } catch (Win32Exception e) {
+        // Allow ERROR_PARTIAL_COPY incase the game stopped midway through
+        // "Only part of a ReadProcessMemory or WriteProcessMemory request was completed."
+        if (e.ErrorCode != 299) {
+          throw e;
+        }
+      }
+    }
+
+    public void UpdateForm() {
       if (!MemoryManager.IsGameHooked()) {
-        ArePointerSetup = false;
+        ArePointersSetup = false;
         SetupPointers();
       }
-      if (!ArePointerSetup) {
+      if (!ArePointersSetup) {
         SetupPointers();
       }
-      if (ArePointerSetup) {
+      if (ArePointersSetup) {
         Title.Text = "External Stats Screen - Hooked";
       } else {
         Title.Text = "External Stats Screen - Not Hooked";
