@@ -1,7 +1,6 @@
-﻿using System;
+﻿using MemTools;
+using System;
 using System.ComponentModel;
-using System.Diagnostics;
-using System.Text;
 using System.Windows.Forms;
 
 namespace external_stats_screen {
@@ -16,7 +15,6 @@ namespace external_stats_screen {
     public MainForm() {
       InitializeComponent();
       PlayerBox.SelectedIndex = 0;
-      Text = $"{Program.VERSION} - External Stats Screen";
 
       UpdateCMS = new ContextMenuStrip();
 
@@ -35,7 +33,7 @@ namespace external_stats_screen {
 
       ContextMenuStrip = UpdateCMS;
 
-      SetupPointers();
+      GameHook.TryHookGame();
 
       UpdateTimer = new Timer {
         Interval = UPDATE_MS
@@ -59,111 +57,41 @@ namespace external_stats_screen {
       UpdateTimer.Start();
     }
 
-    private Pointer Difficulty;
-    private Pointer CurrentTime;
-    private Pointer LevelNamePtr;
-
-    private const int PLAYER_TARGET_SIZE = 0x88;
-    private Player[] AllPlayers;
-
-    private bool ArePointersSetup = false;
-
-    public void SetupPointers() {
-      if (!MemoryManager.IsGameRunning()) {
-        return;
-      }
-
-      ProcessModule engine = null;
-      foreach (ProcessModule m in MemoryManager.Game.Modules) {
-        if (m.ModuleName == "Engine.dll") {
-          engine = m;
-          break;
-        }
-      }
-      if (engine == null) {
-        return;
-      }
-
-      IntPtr _pNetwork = MemoryManager.ReadPtr(MemoryManager.ReadPtr(SigScanner.Scan(
-        engine.BaseAddress,
-        engine.ModuleMemorySize,
-        2,
-        "8B 0D ????????",           // mov ecx,[Engine._pNetwork]
-        "83 C4 08",                 // add esp,08
-        "E8 ????????",              // call Engine.CNetworkLibrary::IsPaused
-        "85 C0"                     // test eax,eax
-      )));
-
-      if (_pNetwork == IntPtr.Zero) {
-        return;
-      }
-
-      if (MemoryManager.HookedGameVersion == GameVersion.REVOLUTION) {
-        Difficulty = new Pointer(_pNetwork, 0x9C);
-        CurrentTime = new Pointer(_pNetwork, 0x20, 0x58);
-        LevelNamePtr = new Pointer(_pNetwork, 0x12EC, 0x0);
-      } else {
-        Difficulty = new Pointer(_pNetwork, 0x988);
-        CurrentTime = new Pointer(_pNetwork, 0x20, 0x38);
-        LevelNamePtr = new Pointer(_pNetwork, (MemoryManager.HookedGameVersion == GameVersion.TFE)
-                                              ? 0x1284
-                                              : 0x1288, 0x0);
-      }
-
-      int playerCount = new Pointer(_pNetwork, 0x20, 0x0).ReadInt();
-      Pointer firstPlayer = new Pointer(_pNetwork, 0x20, 0x4, 0x0);
-      AllPlayers = new Player[playerCount];
-      for (int i = 0; i < playerCount; i++) {
-        AllPlayers[i] = new Player(firstPlayer);
-        firstPlayer = firstPlayer.Adjust(PLAYER_TARGET_SIZE);
-      }
-
-      ArePointersSetup = true;
-    }
-
     public void UpdateSafe(object myObject, EventArgs myEventArgs) {
       try {
         UpdateForm();
       } catch (Win32Exception e) {
         // Allow ERROR_PARTIAL_COPY incase the game stopped midway through
         // "Only part of a ReadProcessMemory or WriteProcessMemory request was completed."
-        if (e.ErrorCode != 299) {
+        if (e.NativeErrorCode != MemManager.ERROR_PARTIAL_COPY) {
           throw e;
         }
       }
     }
 
     public void UpdateForm() {
-      if (!MemoryManager.IsGameHooked()) {
-        ArePointersSetup = false;
-        SetupPointers();
-      }
-      if (!ArePointersSetup) {
-        SetupPointers();
-      }
-      if (ArePointersSetup) {
-        Title.Text = "External Stats Screen - Hooked";
-      } else {
-        Title.Text = "External Stats Screen - Not Hooked";
-        return;
+      if (!GameHook.IsReady) {
+        GameHook.TryHookGame();
+
+        if (!GameHook.IsReady) {
+          Title.Text = "External Stats Screen - Not Hooked";
+          return;
+        }
       }
 
-      string levelNameStr = DeformatCTString(LevelNamePtr.ReadAscii());
-      if (levelNameStr.Length == 0) {
-        LevelName.Text = "Unknown Level";
-      } else {
-        LevelName.Text = levelNameStr;
-      }
+      Title.Text = "External Stats Screen - Hooked";
+      LevelName.Text = GameHook.LevelName;
 
-      foreach (Player p in AllPlayers) {
-        if (p.IsActive()) {
+      // Refresh the player list
+      foreach (Player p in GameHook.AllPlayers) {
+        if (p.IsActive) {
           if (PlayerBox.Items.Contains(p)) {
             // Replace the player so that the name updates
             PlayerBox.Items[PlayerBox.Items.IndexOf(p)] = p;
           } else {
             PlayerBox.Items.Add(p);
           }
-        } else if (!p.IsActive() && PlayerBox.Items.Contains(p)) {
+        } else if (!p.IsActive && PlayerBox.Items.Contains(p)) {
           if (PlayerBox.SelectedItem == p) {
             PlayerBox.SelectedItem = PlayerBox.Items[0];
           }
@@ -171,17 +99,17 @@ namespace external_stats_screen {
         }
       }
 
-
+      // The top part of the gui
       int totalScore = 0;
-      int startTimeUnix = -1;
+      DateTime startTimeUnix = DateTime.MaxValue;
       float levelStartTime = -1.0f;
-      foreach (Player p in AllPlayers) {
-        if (p.IsActive()) {
-          totalScore += p.GameStats.Score.ReadInt();
+      foreach (Player p in GameHook.AllPlayers) {
+        if (p.IsActive) {
+          totalScore += p.GameStats.Score;
 
-          int playerStartTime = p.StartTimeUnix.ReadInt();
-          float playerLevelStartTime = p.LevelStartTime.ReadFloat();
-          if (playerStartTime < startTimeUnix || startTimeUnix < 0) {
+          DateTime playerStartTime = p.UnixStartTime;
+          float playerLevelStartTime = p.LevelStartTime;
+          if (playerStartTime < startTimeUnix) {
             startTimeUnix = playerStartTime;
           }
           if (playerLevelStartTime < levelStartTime || levelStartTime < 0) {
@@ -190,26 +118,23 @@ namespace external_stats_screen {
         }
       }
 
-      DateTime startTime = DateTimeOffset.FromUnixTimeSeconds(startTimeUnix).LocalDateTime;
-      TimeSpan realTime = DateTime.Now - startTime;
+      TimeSpan realTime = DateTime.Now - startTimeUnix;
       TimeSpan gameIGT, levelIGT;
       try {
-        gameIGT = TimeSpan.FromSeconds((MemoryManager.HookedGameVersion == GameVersion.REVOLUTION)
-                                                ? CurrentTime.ReadDouble()
-                                                : CurrentTime.ReadFloat());
-
+        gameIGT = GameHook.IGT;
         levelIGT = gameIGT.Subtract(TimeSpan.FromSeconds(levelStartTime));
       // While the game starts/stops these can have invalid values - NaNs or values overflowing the timespan
       } catch (Exception e) when (e is ArgumentException || e is OverflowException) {
         gameIGT = TimeSpan.Zero;
         levelIGT = TimeSpan.Zero;
       }
+
       string startTimeStr;
       string realTimeStr;
       string gameIGTStr;
       string levelIGTStr;
-      if (startTimeUnix > 0 && levelStartTime > 0) {
-        startTimeStr = startTime.ToString("ddd yyyy-MM-dd HH:mm");
+      if (startTimeUnix != DateTime.MaxValue && levelStartTime > 0) {
+        startTimeStr = startTimeUnix.ToString("ddd yyyy-MM-dd HH:mm");
         realTimeStr = realTime.ToString("hh\\:mm\\:ss");
         gameIGTStr = gameIGT.ToString("hh\\:mm\\:ss");
         levelIGTStr = levelIGT.ToString("hh\\:mm\\:ss");
@@ -220,6 +145,24 @@ namespace external_stats_screen {
         levelIGTStr = "00:00:00";
       }
 
+      string diffStr;
+      switch (GameHook.Difficulty) {
+        case -1: diffStr = "Tourist"; break;
+        case 0: diffStr = "Easy"; break;
+        default:
+        case 1: diffStr = "Normal"; break;
+        case 2: diffStr = "Hard"; break;
+        case 3: diffStr = "Serious"; break;
+        case 4: diffStr = "Mental"; break;
+      }
+
+      GeneralStats.Text = $"{totalScore}\n" +
+                          $"{diffStr}\n" +
+                          $"{startTimeStr}\n" +
+                          $"{realTimeStr}\n";
+
+
+      // Per player/squad stats
       if (PlayerBox.SelectedItem.Equals("Squad")) {
         int score = 0, gameScore = 0;
         int deaths = 0, gameDeaths = 0;
@@ -228,30 +171,30 @@ namespace external_stats_screen {
         int totalKills = 0, gameTotalKills = 0;
         int totalSecrets = 0, gameTotalSecrets = 0;
 
-        foreach (Player p in AllPlayers) {
-          if (p.IsActive()) {
-            score += p.LevelStats.Score.ReadInt();
-            gameScore += p.GameStats.Score.ReadInt();
-            deaths += p.LevelStats.Deaths.ReadInt();
-            gameDeaths += p.GameStats.Deaths.ReadInt();
-            kills += p.LevelStats.Kills.ReadInt();
-            gameKills += p.GameStats.Kills.ReadInt();
-            secrets += p.LevelStats.Secrets.ReadInt();
-            gameSecrets += p.GameStats.Secrets.ReadInt();
+        foreach (Player p in GameHook.AllPlayers) {
+          if (p.IsActive) {
+            score += p.LevelStats.Score;
+            gameScore += p.GameStats.Score;
+            deaths += p.LevelStats.Deaths;
+            gameDeaths += p.GameStats.Deaths;
+            kills += p.LevelStats.Kills;
+            gameKills += p.GameStats.Kills;
+            secrets += p.LevelStats.Secrets;
+            gameSecrets += p.GameStats.Secrets;
 
-            int tmp = p.LevelStats.TotalKills.ReadInt();
+            int tmp = p.LevelStats.TotalKills;
             if (tmp > totalKills) {
               totalKills = tmp;
             }
-            tmp = p.GameStats.TotalKills.ReadInt();
+            tmp = p.GameStats.TotalKills;
             if (tmp > gameTotalKills) {
               gameTotalKills = tmp;
             }
-            tmp = p.LevelStats.TotalSecrets.ReadInt();
+            tmp = p.LevelStats.TotalSecrets;
             if (tmp > totalSecrets) {
               totalSecrets = tmp;
             }
-            tmp = p.GameStats.TotalSecrets.ReadInt();
+            tmp = p.GameStats.TotalSecrets;
             if (tmp > gameTotalSecrets) {
               gameTotalSecrets = tmp;
             }
@@ -273,49 +216,6 @@ namespace external_stats_screen {
         LevelStats.Text = p.LevelStats.ToString() + levelIGTStr;
         GameStats.Text = p.GameStats.ToString() + gameIGTStr;
       }
-
-      string diffStr;
-      switch (Difficulty.ReadInt()) {
-        case -1: diffStr = "Tourist"; break;
-        case 0: diffStr = "Easy"; break;
-        default:
-        case 1: diffStr = "Normal"; break;
-        case 2: diffStr = "Hard"; break;
-        case 3: diffStr = "Serious"; break;
-        case 4: diffStr = "Mental"; break;
-      }
-
-      GeneralStats.Text = $"{totalScore}\n" +
-                          $"{diffStr}\n" +
-                          $"{startTimeStr}\n" +
-                          $"{realTimeStr}\n";
-    }
-
-    public static string DeformatCTString(string input) {
-      StringBuilder output = new StringBuilder();
-      for (int i = 0; i < input.Length; i++) {
-        char c = input[i];
-        if (c != '^') {
-          output.Append(c);
-        } else {
-          switch (input[i + 1]) {
-            case 'c': i += 7; break;
-            case 'a': i += 3; break;
-            case 'f': i += 2; break;
-            case 'r':
-            case 'o':
-            case 'b':
-            case 'i':
-            case 'C':
-            case 'A':
-            case 'B':
-            case 'I':
-            case 'F': i++; break;
-            default: output.Append(c); break;
-          }
-        }
-      }
-      return output.ToString();
     }
   }
 }

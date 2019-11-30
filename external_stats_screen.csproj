@@ -8,6 +8,9 @@
     <NoWin32Manifest>true</NoWin32Manifest>
     <StartupObject>external_stats_screen.Program</StartupObject>
     <ApplicationIcon>logo.ico</ApplicationIcon>
+    <AssemblyVersion>1.2.0.0</AssemblyVersion>
   </PropertyGroup>
+
+  <Import Project="..\MemTools\MemTools.projitems" Label="Shared" />
 
 </Project>

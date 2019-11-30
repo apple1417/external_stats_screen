@@ -158,6 +158,7 @@
       this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
       this.MaximizeBox = false;
       this.Name = "MainForm";
+      this.Text = "External Stats Screen";
       this.ResumeLayout(false);
       this.PerformLayout();
 

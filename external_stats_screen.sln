@@ -5,7 +5,12 @@ VisualStudioVersion = 16.0.29403.142
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "external_stats_screen", "external_stats_screen.csproj", "{70D595BC-BBC0-4BC3-9F4D-4DAB31CEBA5C}"
 EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "MemTools", "..\MemTools\MemTools.shproj", "{F6AB04FF-EA6E-42D6-8004-26D9389429A4}"
+EndProject
 Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\MemTools\MemTools.projitems*{f6ab04ff-ea6e-42d6-8004-26d9389429a4}*SharedItemsImports = 13
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
 		Release|x86 = Release|x86

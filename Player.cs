@@ -1,45 +1,79 @@
-﻿namespace external_stats_screen {
+﻿using MemTools;
+using System;
+using System.ComponentModel;
+
+namespace external_stats_screen {
   class Player {
-    public Pointer Active;
+    private readonly Pointer activePtr;
+    public bool IsActive {
+      get {
+        if (!GameHook.IsReady) {
+          return false;
+        }
+        return GameHook.Manager.ReadInt32(activePtr) != 0;
+      }
+    }
 
-    public Pointer Name;
+    private readonly Pointer namePtr;
+    public string Name => ToString();
 
-    public Pointer StartTimeUnix;
-    public Pointer LevelStartTime;
+    private readonly Pointer startTimeUnixPtr;
+    public DateTime UnixStartTime {
+      get {
+        if (!GameHook.IsReady) {
+          return DateTime.MaxValue;
+        }
+        int startTime = GameHook.Manager.ReadInt32(startTimeUnixPtr);
+        if (startTime > 0) {
+          return DateTimeOffset.FromUnixTimeSeconds(startTime).LocalDateTime;
+        }
+        return DateTime.MaxValue;
+      }
+    }
 
-    public PlayerStats LevelStats;
-    public PlayerStats GameStats;
+    private readonly Pointer levelStartTimePtr;
+    public float LevelStartTime {
+      get {
+        if (!GameHook.IsReady) {
+          return 0;
+        }
+        return GameHook.Manager.ReadFloat(levelStartTimePtr);
+      }
+    }
+
+    public readonly PlayerStats LevelStats;
+    public readonly PlayerStats GameStats;
 
     public Player(Pointer playerTarget) {
-      Active = playerTarget.Adjust(0);
+      activePtr = playerTarget.Clone();
 
       Pointer playerEntity = playerTarget.Adjust(4);
-      switch (MemoryManager.HookedGameVersion) {
+      switch (GameHook.CurrentVersion) {
         case GameVersion.TFE: {
-          Name = playerEntity.AddOffsets(0x310, 0x0);
+          namePtr = playerEntity.AddOffsets(0x310, 0x0);
 
-          StartTimeUnix = playerEntity.AddOffsets(0xAC0);
-          LevelStartTime = playerEntity.AddOffsets(0xAC8);
+          startTimeUnixPtr = playerEntity.AddOffsets(0xAC0);
+          levelStartTimePtr = playerEntity.AddOffsets(0xAC8);
 
           LevelStats = new PlayerStats(playerEntity.AddOffsets(0x1240));
           GameStats = new PlayerStats(playerEntity.AddOffsets(0x1268));
           break;
         }
         case GameVersion.TSE: {
-          Name = playerEntity.AddOffsets(0x310, 0x0);
+          namePtr = playerEntity.AddOffsets(0x310, 0x0);
 
-          StartTimeUnix = playerEntity.AddOffsets(0xC38);
-          LevelStartTime = playerEntity.AddOffsets(0xC40);
+          startTimeUnixPtr = playerEntity.AddOffsets(0xC38);
+          levelStartTimePtr = playerEntity.AddOffsets(0xC40);
 
           LevelStats = new PlayerStats(playerEntity.AddOffsets(0x2584));
           GameStats = new PlayerStats(playerEntity.AddOffsets(0x25AC));
           break;
         }
         case GameVersion.REVOLUTION: {
-          Name = playerEntity.AddOffsets(0x368, 0x0);
+          namePtr = playerEntity.AddOffsets(0x368, 0x0);
 
-          StartTimeUnix = playerEntity.AddOffsets(0xC2C);
-          LevelStartTime = playerEntity.AddOffsets(0xC34);
+          startTimeUnixPtr = playerEntity.AddOffsets(0xC2C);
+          levelStartTimePtr = playerEntity.AddOffsets(0xC34);
 
           LevelStats = new PlayerStats(playerEntity.AddOffsets(0x2B20));
           GameStats = new PlayerStats(playerEntity.AddOffsets(0x2B90));
@@ -48,16 +82,26 @@
       }
     }
 
-    public bool IsActive() => Active.ReadInt() != 0;
-
     override public string ToString() {
-      if (IsActive()) {
-        string name = MainForm.DeformatCTString(Name.ReadAscii());
-        if (name.Length == 0) {
-          return "Unknown Player Name";
-        }
-        return name;
+      if (!GameHook.Manager.IsHooked) {
+        return "Unhooked Player";
       }
+
+
+      if (IsActive) {
+        try {
+          string name = GameHook.DeformatCTString(GameHook.Manager.ReadAscii(namePtr));
+          if (name.Length > 0) {
+            return name;
+          }
+
+          // Even though the stack trace goes through MainForm.UpdateSafe(), which already catches this,
+          //  we also have to so that the external code part of forms can properly call this
+        } catch (Win32Exception) { }
+
+        return "Unknown Player Name";
+      }
+
       return "Inactive Player";
     }
   }
