@@ -1,4 +1,5 @@
 ﻿using MemTools;
+using System;
 
 namespace external_stats_screen {
   class PlayerStats {
@@ -8,7 +9,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return 0;
         }
-        return GameHook.Manager.ReadInt32(scorePtr);
+        return GameHook.Manager.Read<Int32>(scorePtr);
       }
     }
 
@@ -18,7 +19,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return 0;
         }
-        return GameHook.Manager.ReadInt32(killsPtr);
+        return GameHook.Manager.Read<Int32>(killsPtr);
       }
     }
 
@@ -28,7 +29,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return 0;
         }
-        return GameHook.Manager.ReadInt32(deathsPtr);
+        return GameHook.Manager.Read<Int32>(deathsPtr);
       }
     }
 
@@ -38,7 +39,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return 0;
         }
-        return GameHook.Manager.ReadInt32(secretsPtr);
+        return GameHook.Manager.Read<Int32>(secretsPtr);
       }
     }
 
@@ -49,7 +50,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return 0;
         }
-        return GameHook.Manager.ReadInt32(totalKillsPtr);
+        return GameHook.Manager.Read<Int32>(totalKillsPtr);
       }
     }
 
@@ -59,7 +60,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return 0;
         }
-        return GameHook.Manager.ReadInt32(totalSecretsPtr);
+        return GameHook.Manager.Read<Int32>(totalSecretsPtr);
       }
     }
 

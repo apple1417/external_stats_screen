@@ -1,6 +1,7 @@
 ﻿using MemTools;
 using System;
 using System.ComponentModel;
+using System.Text;
 
 namespace external_stats_screen {
   class Player {
@@ -10,7 +11,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return false;
         }
-        return GameHook.Manager.ReadInt32(activePtr) != 0;
+        return GameHook.Manager.Read<Int32>(activePtr) != 0;
       }
     }
 
@@ -23,7 +24,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return DateTime.MaxValue;
         }
-        int startTime = GameHook.Manager.ReadInt32(startTimeUnixPtr);
+        int startTime = GameHook.Manager.Read<Int32>(startTimeUnixPtr);
         if (startTime > 0) {
           return DateTimeOffset.FromUnixTimeSeconds(startTime).LocalDateTime;
         }
@@ -37,7 +38,7 @@ namespace external_stats_screen {
         if (!GameHook.IsReady) {
           return 0;
         }
-        return GameHook.Manager.ReadFloat(levelStartTimePtr);
+        return GameHook.Manager.Read<Single>(levelStartTimePtr);
       }
     }
 
@@ -90,7 +91,7 @@ namespace external_stats_screen {
 
       if (IsActive) {
         try {
-          string name = GameHook.DeformatCTString(GameHook.Manager.ReadAscii(namePtr));
+          string name = GameHook.DeformatCTString(GameHook.Manager.ReadString(namePtr, Encoding.ASCII));
           if (name.Length > 0) {
             return name;
           }

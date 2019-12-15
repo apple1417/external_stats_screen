@@ -26,7 +26,7 @@ namespace external_stats_screen {
         if (!IsReady) {
           return 0;
         }
-        return Manager.ReadInt32(difficultyPtr);
+        return Manager.Read<Int32>(difficultyPtr);
       }
     }
 
@@ -37,8 +37,8 @@ namespace external_stats_screen {
         }
         return TimeSpan.FromSeconds(
           CurrentVersion == GameVersion.REVOLUTION
-          ? Manager.ReadDouble(currentIGTPtr)
-          : Manager.ReadFloat(currentIGTPtr)
+          ? Manager.Read<Double>(currentIGTPtr)
+          : Manager.Read<Single>(currentIGTPtr)
         );
       }
     }
@@ -48,7 +48,7 @@ namespace external_stats_screen {
         if (!IsReady) {
           return "Unknown Level";
         }
-        string name = DeformatCTString(Manager.ReadAscii(levelNamePtr));
+        string name = DeformatCTString(Manager.ReadString(levelNamePtr, Encoding.ASCII));
         if (name.Length == 0) {
           return "Unknown level";
         }
@@ -78,7 +78,7 @@ namespace external_stats_screen {
         return;
       }
 
-      IntPtr _pNetwork = Manager.ReadPtr(Manager.ReadPtr(Manager.SigScan(
+      IntPtr _pNetwork = Manager.Read<IntPtr>(Manager.Read<IntPtr>(Manager.SigScan(
         Engine.BaseAddress,
         Engine.ModuleMemorySize,
         2,
@@ -105,7 +105,7 @@ namespace external_stats_screen {
                                               : 0x1288, 0x0);
       }
 
-      int playerCount = Manager.ReadInt32(new Pointer(_pNetwork, 0x20, 0x0));
+      int playerCount = Manager.Read<Int32>(new Pointer(_pNetwork, 0x20, 0x0));
       Pointer firstPlayer = new Pointer(_pNetwork, 0x20, 0x4, 0x0);
       AllPlayers = new Player[playerCount];
       for (int i = 0; i < playerCount; i++) {
@@ -133,7 +133,7 @@ namespace external_stats_screen {
 
         if (addr != IntPtr.Zero) {
           byte minor = Manager.Read(addr, 1)[0];
-          int major = Manager.ReadInt32(IntPtr.Add(addr, 2));
+          int major = Manager.Read<Int32>(IntPtr.Add(addr, 2));
           if (major == 10000 && minor == 5) {
             return GameVersion.TFE;
           } else if (major == 10000 && minor == 7) {
@@ -153,7 +153,7 @@ namespace external_stats_screen {
           return GameVersion.NONE;
         }
 
-        string versionStr = Manager.ReadAscii(Manager.ReadPtr(Manager.ReadPtr(addr)));
+        string versionStr = Manager.ReadString(Manager.Read<IntPtr>(Manager.Read<IntPtr>(addr)), Encoding.ASCII);
 
         if (versionStr.StartsWith("AP_3")) {
           return GameVersion.REVOLUTION;
